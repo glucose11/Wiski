@@ -1,0 +1,23 @@
+<apex:page controller="DomainChangeUrlPrototypeController">
+
+
+<apex:pageMessages />
+
+
+<apex:form>
+	
+	<apex:pageBlock title="Update the relative urls" >
+		<apex:pageBlockButtons location="bottom">
+			<apex:commandButton action="{!changeTheDomainName}" value="Save" />
+		</apex:pageBlockButtons>	
+		<apex:pageBlockSection  columns="2" collapsible="false">
+			<apex:pageblockSectionItem>
+				<apex:outputLabel value="Domain Name" />
+				<apex:inputText value="{!domainUrl}"  /> 
+			</apex:pageblockSectionItem>
+		</apex:pageBlockSection>
+	</apex:pageBlock> 
+	
+	
+</apex:form>
+</apex:page>

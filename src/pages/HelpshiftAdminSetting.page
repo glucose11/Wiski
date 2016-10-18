@@ -1,0 +1,86 @@
+<apex:page sidebar="false">
+<apex:stylesheet value="{!URLFor($Resource.helpshift, '/helpshift/css/helpshift.css')}"/>
+<apex:stylesheet value="{!URLFor($Resource.helpshift, '/helpshift/css/bootstrap.min.css')}"/>
+<apex:stylesheet value="{!URLFor($Resource.helpshift, '/helpshift/css/bootstrap-theme.min.css')}"/>
+<script src="/canvas/sdk/js/35.0/controller.js" />
+<apex:includeScript value="{!URLFor($Resource.helpshift, '/helpshift/js/jquery-2.1.4.min.js')}"/>
+<script src="{!URLFor($Resource.helpshift, '/helpshift/js/dom.js')}"/>
+<apex:includeScript value="{!URLFor($Resource.helpshift, '/helpshift/js/bootstrap3.3.5.min.js')}"/>
+<style>
+    .tag {
+        padding: 5px;
+        border: 1px solid blue;
+        margin-left: 5px;
+    }
+    .clsBtn {
+        padding: 5px;
+        border-left: 1px solid blue;
+        margin-left: 5px;
+    }
+    .hd {display:none !important;}
+    .ansDiv {
+        height: 45px;
+        overflow-y: auto;
+        text-overflow: ellipsis;
+    }
+    .selected .selectLink {
+        display:none !important;
+    }
+    .OneSelected .selectLink .selected-text {
+        display:inline !important;
+    }
+</style>
+<div id="s" class="page-container">
+    <div class="sf-admin">
+        <div class="tabs">
+            <ul class="tabs__nav" role="tablist">
+                <li class="tabs__item active" title="Account" role="presentation" id="AccountTab">
+                    <a class="tab" href="#" data-tab="account" role="tab" tabindex="0" aria-selected="true">Account</a>
+                </li>
+                <li class="tabs__item" title="Support Team" role="presentation">
+                    <a class="tab" href="#" data-tab="team" role="tab" tabindex="-1" aria-selected="false">Support Team</a>
+                </li>
+                <li class="tabs__item" title="FAQs" role="presentation">
+                    <a class="tab" href="#" data-tab="faqs" role="tab" tabindex="-1" aria-selected="false">FAQs</a>
+                </li>
+                <li class="tabs__item hd" title="Documentation and Help" role="presentation">
+                    <a class="tab" href="#" data-tab="help" role="tab" tabindex="-1" aria-selected="false">Documentation &amp; Help</a>
+                </li>
+                <li class="tabs__item" title="OmniChannel" role="presentation" >
+                    <a class="tab" href="#" data-tab="OmniChannel" role="tab" tabindex="0" aria-selected="true">Settings</a>
+                </li>
+            </ul>
+            <div id="account" class="tabs__content active " role="tabpanel">
+                <c:HelpshiftAccountCanvasApp />
+            </div>
+            <div id="team" class="tabs__content" role="tabpanel">
+                <apex:outputPanel id="HSUserDiv"><c:HSUser /></apex:outputPanel>
+            </div>
+            <div id="faqs" class="tabs__content" role="tabpanel">
+                <apex:outputPanel id="HSFaqDiv"><c:HSFaq /></apex:outputPanel>
+            </div>
+            <div id="help" class="tabs__content hd" role="tabpanel">
+                
+            </div>
+            <div id="OmniChannel" class="tabs__content" role="tabpanel">
+                <c:HelpshiftOmniChannelSetting />
+            </div>
+        </div>
+    </div>
+</div>
+    <!-- Handle Tab Navigation -->
+    <script>
+        dom.one(".tabs__nav").on("click", function(ev) {
+        var tabButton = ev.target;
+        var tab = "#" + tabButton.getData ("tab");
+        dom.one (".tabs__nav .tabs__item.active").removeClass ("active");
+        tabButton.ancestor (".tabs__item").addClass ("active");
+        
+        ["#account", "#team", "#faqs", "#help", "#OmniChannel"].forEach (function (selector) {
+        dom.one (selector).removeClass ("active");
+        });
+        
+        dom.one (tab).addClass ("active");
+        });
+    </script>
+</apex:page>

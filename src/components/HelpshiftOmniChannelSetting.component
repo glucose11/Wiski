@@ -1,0 +1,97 @@
+<apex:component controller="HelpshiftOmniChannelSetting" allowDML="true">
+<style>
+    .container {
+  background: #F5F9FC;
+  padding: 40px;
+  height: 900px;
+  font-family: "Helvetica Neue", "Helvetica", arial, verdana;
+}
+
+.wrapper {
+  margin: 0 auto;
+  max-width: 778px;
+}
+
+.settings-title {
+  font-family: "Helvetica Neue", "Helvetica", arial, verdana;
+  font-weight: normal;
+  color: #53688E;
+  margin-bottom: 24px;
+}
+
+.box {
+  background: #fff;
+  padding: 24px;
+  border: 1px solid #ABC3D8;
+  border-radius: 2px;
+}
+
+.omnichannel-check {
+  margin-right: 10px;
+  margin-bottom: 0;
+}
+
+.description {
+  margin: 24px 10px 0 0;
+  margin-top: 10px;
+  margin-left: 24px;
+  font-size: 14px;
+  color: #A7B1BB;
+  line-height: 1.6;
+}
+
+    .overlay {
+        background: #ddd;
+        width: 80%;
+        height: 50%;
+        top: 0;
+        margin-top: 8%;
+        position: absolute;
+        opacity: .25;
+
+    }
+</style>
+
+<apex:outputPanel id="OmniChannelPanel">
+<apex:pageMessage severity="Confirm" summary="{!omniMessage}" id="pgMsg" rendered="{!AND(omniMessage!=null,omniMessage!='')}"/>
+<apex:form >
+<div class="container">
+  <div class="wrapper">
+
+    <h1 class="settings-title">Settings</h1>
+    <div class="box">
+      <label>
+        <apex:inputCheckbox value="{!objHSSetting.IsOmniChannelEnabled__c}" styleClass="omnichannel-check" onchange="omniChannelSetting(this);" />
+        Enable Omni-channel integration</label>
+      <p class="description">If enabled, Salesforce cases corresponding to Helpshift issues will have 'Case Origin' field set as ‘Helpshift’. Based on this value, You can in-turn configure Omni-channel to pick up the cases for routing to appropriate agents.
+        <br/> Note: If using Omni-channel, do not user Helpshift issue automations. These are conflicting features.</p>
+    </div>
+  </div>
+</div>
+    
+    
+    
+    
+    
+        
+            
+            
+                <apex:actionFunction status="saveOmniChannelSettingStatus" name="saveOmniChannelSetting" action="{!SaveSetting}"  reRender="OmniChannelPanel, pgMsg" />
+                <apex:actionStatus id="saveOmniChannelSettingStatus" layout="block">
+                    <apex:facet name="start"><div class="overlay">Please wait..</div></apex:facet>
+                </apex:actionStatus>
+            </apex:form>
+            <script>
+                function omniChannelSetting(th) {
+                    var isConfirm = confirm('Are you sure?');
+                    if(isConfirm) {
+                        saveOmniChannelSetting();
+                    }
+                    else {
+                        th.checked = !th.checked;
+                    }
+                }
+            </script>
+        </apex:outputPanel>
+    
+</apex:component>

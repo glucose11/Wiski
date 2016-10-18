@@ -1,0 +1,42 @@
+<apex:component controller="HelpshiftAccountCanvasApp" allowDML="true" id="HSAccountComp1" selfClosing="true">
+    <apex:attribute name="loadDashboard" type="Boolean" default="false" description="Is to load Dashboard"/>
+    
+    <apex:outputPanel rendered="{!NOT(loadDashboard)}">
+        <apex:form id="frm">
+            <apex:actionFunction name="SaveUserAsHSAdmin" action="{!onSaveUserAsHSAdmin}" reRender="pgMsg"/>
+            <apex:actionFunction name="SaveDomainAndAccessKey" action="{!SaveHSDomainAndAccessKey}" onbeforedomupdate="SaveUserAsHSAdmin();" reRender="pgMsg">
+                <apex:param value="" name="hsDomain"    assignTo="{!hsDomain}"/>
+                <apex:param value="" name="hsAccessKey" assignTo="{!hsAccessKey}"/>
+                <apex:param value="" name="hsDomainExists"    assignTo="{!hsDomainExists}"/>
+                <apex:param value="" name="hsCreatedAt" assignTo="{!hsCreatedAt}"/>
+            </apex:actionFunction>
+        </apex:form>
+        <apex:canvasApp developerName="Helpshift_Singed_Req_Demo" namespacePrefix="DazeworksDemo" parameters="{service:'admin', {!domainVar}}"  width="100%"  scrolling="true" />
+        <script>
+            Sfdc.canvas.controller.subscribe({ name:"Helpshift.statusChanged", onData:function(e){ 
+                SaveDomainAndAccessKey(e.domain, e["access-key"], e["domain-exists"], e["created-at"]); 
+            }   });
+            Sfdc.canvas.controller.subscribe({ name:"DazeworksDemo.statusChanged", onData:function(e){ 
+                SaveDomainAndAccessKey(e.domain, e["access-key"], e["domain-exists"], e["created-at"]); 
+            }   });
+        </script>
+    </apex:outputPanel>
+    <apex:outputPanel rendered="{!loadDashboard}">
+    
+        <!--Modified by Deepak(10 Sept 2016) 
+            
+            Need: Linking directly to issue detail 
+            from the Link in Case
+            
+            Description: The Signed Request to contain an additional 
+            environment parameter 'issue-id' along with the 
+            already existing 'domain' parameter, where the 
+            value of 'issue-id' is the HS Issue Id stored on the Case
+            
+            Change: Added an attribute in the Canvas Parameters
+            'issue-id':'{!$CurrentPage.parameters.issue_id}'-->  
+             
+        <apex:canvasApp developerName="Helpshift_Singed_Req_Demo" namespacePrefix="DazeworksDemo" parameters="{service:'dashboard', domain:'{!hsDomain}', 'issue-id':'{!$CurrentPage.parameters.issue_id}'}" width="100%" scrolling="true" rendered="{!(hsDomain!='')}"  />
+        <apex:outputText value="{!$Label.HSDashboardMessageForDomain}" rendered="{!(hsDomain=='')}"/>
+    </apex:outputPanel>
+</apex:component>

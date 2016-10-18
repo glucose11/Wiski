@@ -1,0 +1,59 @@
+<apex:component controller="HSFaq" allowDML="true" id="FAQMappingCmp">
+<style>
+.form-control {
+    display: block;
+    width: 100%;
+    height: 34px;
+    padding: 6px 12px;
+    font-size: 14px;
+    line-height: 1.42857143;
+    color: #555;
+    background-color: #fff;
+    background-image: none;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    -webkit-box-shadow: inset 0 1px 1px rgba(0,0,0,.075);
+    box-shadow: inset 0 1px 1px rgba(0,0,0,.075);
+    -webkit-transition: border-color ease-in-out .15s,-webkit-box-shadow ease-in-out .15s;
+    -o-transition: border-color ease-in-out .15s,box-shadow ease-in-out .15s;
+    transition: border-color ease-in-out .15s,box-shadow ease-in-out .15s;
+}
+.tooltip-inner {
+    max-width: 200px;
+    padding: 3px 8px;
+    color: #fff;
+    text-align: center;
+    background-color: #000;
+    border-radius: 4px;
+}
+</style>
+<apex:outputPanel layout="none" >
+<apex:pageMessages id="MappingMSG"/>
+<apex:form >
+    <apex:pageBlock mode="edit">
+        <apex:pageBlockButtons title="FAQ Mapping">
+            <apex:commandButton action="{!onSave}" value="Save" reRender="MappingMSG"/>
+            <input type="button" class="btn btn-default" data-dismiss="modal" value="Cancel" />
+        </apex:pageBlockButtons>
+        <apex:pageBlockSection columns="1" title="FAQ Mapping">
+            <apex:selectList value="{!newkaObj}" title="Select the Article Type for FAQ"  size="1" styleClass="form-control tooltipCls" label="Knowledge Article Type for FAQs" required="true">
+                <apex:selectOptions value="{!ArticleTypes}"/>
+                <apex:actionSupport action="{!getArticleTypeFields}" event="onchange" reRender="QueFld,AnsFld,newQue,newAns"/>
+            </apex:selectList> 
+            <br/><br/>
+            <apex:selectList id="QueFld" title="Select the Question field for Article" value="{!newQue}" size="1" styleClass="form-control tooltipCls" html-data-placement="top" html-data-toggle="tooltip" label="Field that maps to FAQ title" >
+                <apex:selectOptions value="{!kaQueFieldOptionsList}"/>
+            </apex:selectList>  
+            <br/>           
+            <apex:selectList id="AnsFld" title="Select the Answer field for Article" value="{!newAns}" size="1" styleClass="form-control tooltipCls" html-data-placement="top" html-data-toggle="tooltip" label="Field that maps to FAQ body">
+                <apex:selectOptions value="{!kaAnsFieldOptionsList}"/>
+            </apex:selectList>
+                    
+        </apex:pageBlockSection>
+    </apex:pageBlock>
+    <script>
+        $('.tooltipCls').tooltip();
+    </script>
+</apex:form>  
+</apex:outputPanel>  
+</apex:component>

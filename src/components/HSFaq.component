@@ -1,0 +1,375 @@
+<apex:component controller="HSFaq" allowDML="true">
+<c:HSConfigureFaqMapping rendered="{!NOT(isFAQMappingCorrect)}"/>
+<apex:outputLabel value="{!$Label.HSFAQMessageForDomain}" rendered="{!AND(isFAQMappingCorrect, Not(isHSAccountCreated))}" />
+<apex:outputPanel layout="none" rendered="{!AND(isFAQMappingCorrect, isHSAccountCreated)}">
+    <style>
+        .not-active {
+            pointer-events: none;
+            cursor: default;
+            color:gainsboro;
+        }
+    </style>
+    <script>
+        function setSynchedKA(synchedIds) {
+            for(var i=0; i<synchedIds.length; i++) {
+                var expKA = "."+ synchedIds[i];
+                $("#KAListHTMLPanel").find(expKA).addClass("exported").removeClass("NotSelectedKA");
+                
+            }
+        }
+        function setTranslations(jsonObj) {
+            console.log(jsonObj);
+            var jsonKey = Object.keys(jsonObj);
+            for(var i=0; i<jsonKey.length; i++) {
+                var expKA = "." + jsonKey[i];
+                $("#KAListHTMLPanel").find(expKA).find(".translationsNo").text((jsonObj[jsonKey[i]] +" Translations ")).removeClass("hd");
+            }
+        }
+    </script>
+    <div class="section--faq-message">
+        <div class="section__content">
+            <small>
+                You can export Knowledge Base articles from your Salesforce account to Helpshift.
+                The exported articles will be converted to Helpshift FAQs and will be available inside your mobile app via the Helpshift SDK. 
+                Exported articles are <strong>synced</strong> with Helpshift every <strong>24h</strong>.
+                Any changes made to the Knowledge Base articles in your Salesforce account, will also reflect in corresponding Helpshift FAQs.
+                <a href="#" class="btn btn-primary" data-toggle="modal" data-target=".bs-example-modal-lg">Configure Mapping</a>
+            </small>
+        </div>
+    </div>
+    
+    <div class="section--faq-export">
+        <div class="section__content" style="display: flex;flex-direction: row;">
+            <div class="articles-search" style="order: 2;padding-left: 20px;padding-bottom: 20px;">
+                <h5 class="step-title"><span class="count">3</span>Select Knowledge Articles</h5>
+                <div class="search-wrapper">
+                    <input type="search" placeholder="Search & Filter Knowledge Articles" id="kaSearchBox" onchange="SearchKAByTitle(this);"/>
+                    <div class="filters-wrapper">
+                        <div class="filter">  
+                            <select class="dropdown publish-status" onchange="RefereshPublishedStatus(this);">
+                                <option value="Online" selected="selected">Published</option>
+                                <option value="Draft">Draft</option>
+                                <option value="Archived">Archived</option>
+                            </select>
+                        </div>
+                        <apex:outputPanel layout="block" styleClass="filter" rendered="{!isValidationFieldEnabled}">
+                            <select class="dropdown validation-status" onchange="RefereshValidationStatus(this);">
+                                <option disabled="disabled" selected="selected">Validation Status</option>
+                                <option value="Not Validated">Not Validated</option>
+                                <option value="Validated">Validated</option>
+                            </select>
+                        </apex:outputPanel>
+                        <div class="filter">
+                            <select class="dropdown default-language" onchange="RefereshLanguage(this);">
+                                <option value="en_US" selected="selected">English</option>
+                                <apex:repeat value="{!mapKALanguage}" var="LanguageCode">
+                                    <option value="{!HTMLEncode(LanguageCode)}">{!HTMLEncode(mapKALanguage[LanguageCode])}</option>
+                                </apex:repeat>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="articles-header">
+                    <div class="select-all-wrapper">
+                        <input type="checkbox" class="selectAllArticles" value="select-all-articles" onchange="ToggleAllKASelection(this);" />
+                        <label class="select-label" style="display:inline-block;"><strong class="text" onclick="return false;">Select All Articles</strong></label>
+                    </div>
+                    <div class="sort-wrapper">
+                        <div class="dropdown-wrapper">
+                            <select class="dropdown" onchange="RefreshSortOrder(this);">
+                                <option value="LastPublishedDate" selected="selected">Published Date</option>
+                                <option value="{!HTMLEncode(Que)} ASC">Title: A to Z</option>
+                                <option value="{!HTMLEncode(Que)} DESC">Title: Z to A</option>
+                            </select>
+                        </div>
+                        <span class="select-label">Sort:</span>
+                    </div>
+                </div>
+                
+                <apex:outputPanel layout="block" styleClass="articles-list-wrapper" id="KAListPanel">
+                    <div id="KAListHTMLPanel">
+                        <div class="articles-list">
+                            <apex:repeat value="{!KAList}" var="KA">
+                                <div class="NotSelectedKA article {!HTMLEncode(KA['KnowledgeArticleId'])}">
+                                    <span class="already-exported-message">Previously Exported</span>
+                                    <apex:outputPanel layout="none" rendered="{!LEN(KA[Ans])>0}" >
+                                        <input class="article-select selectChkBx4SFKA" type="checkbox" value="" onclick="changeNotSelectedKA2selected(this);" id="{!HTMLEncode(KA['KnowledgeArticleId'])}"/>
+                                    </apex:outputPanel>
+                                    <div class="content">
+                                        <h5 class="title"><apex:outputLink value="/{!KA['Id']}" target="_blank">{!KA[Que]}</apex:outputLink></h5>
+                                        <p class="answer">
+                                            <div class="ansDiv"><apex:outputField value="{!KA[Ans]}" /></div></p>
+                                        <div class="footer">
+                                            <a class="translations" href="#"><span class="translationsNo"/><span class="selected-text">Selected <span class="deselect-text" onclick="DeselectTranslationsNo(this);">(Deselect)</span></span></a>
+                                            <a class="translations selectLink" href="#"><span class="selected-text">Not Selected <span class="deselect-text" onclick="ReselectTranslationsNo(this);" style="color: #c23934;">(select)</span></span></a>
+                                            <ul class="info">
+                                                <li><apex:outputField value="{!KA['ArticleNumber']}" /></li>
+                                                <li class="separator">&#8226;</li>
+                                                <li><apex:outputField value="{!KA['PublishStatus']}" /></li>
+                                                <li class="separator">&#8226;</li>
+                                                <li>Last Published &nbsp; <apex:outputText value="{!KA['LastPublishedDate']}"/></li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </apex:repeat>
+                        </div>
+                    </div>
+                    
+                    <script>
+                        var totalKaIds=0;
+                        var totalKaIdsTransOneSelected=0;
+                        var selectedKAIds = [];
+                        var selectedKAIdsTransOneSelected = [];
+                        setSynchedKA({!synchedIdsJson}); 
+                        setTranslations({!MasterIdToTransString});
+                    </script>
+                    <apex:outputText value="{!If(TotalRecords>0, '', 'No record found')}" />
+                </apex:outputPanel>
+                <apex:outputPanel id="PageinationBlock">
+                    <br/>
+                    <div>
+                        <div style="float:right;">Page # <b>{!pageNumber}</b></div>
+                        <div style="float:left;">
+                            <a href="#" onclick="FirstPage();" title="First Page" id="FirstPage">First</a> |
+                            <a href="#" onclick="PrevPage();"  title="Previous Page" id="PrevPage">&laquo; Previous</a> |
+                            <a href="#" onclick="NextPage();"  title="Next Page" id="NextPage">Next &raquo;</a> |
+                            <a href="#" onclick="LastPage();"  title="Last Page" id="LastPage">Last</a>
+                        </div>
+                    </div>
+                    <script>
+                        if({!NOT(hasPrevious)}) {
+                            $("#FirstPage").attr("disabled", "disabled").addClass("not-active");
+                            $("#PrevPage").attr("disabled", "disabled").addClass("not-active");
+                        }
+                        if({!NOT(hasNext)}) {
+                            $("#NextPage").attr("disabled", "disabled").addClass("not-active");
+                            $("#LastPage").attr("disabled", "disabled").addClass("not-active");
+                        }
+                    </script>
+                </apex:outputPanel>
+            </div>
+            
+            <div class="export-wrapper" style="order: 1;border-right: 1px solid #C7D7E5;height: 806px;">
+                <div class="app-select-wrapper">
+                    <h5 class="step-title"><span class="count">1</span>Select App</h5>
+                    <div class="content">
+                        <apex:outputPanel id="HS_AppPanel">
+                            <ul class="app-select" id="HSAppList">
+                                <apex:repeat value="{!HS_Apps}" var="appInfo">
+                                <li>
+                                    <a href="#" class="app" onclick="SelectHSApp(this);">
+                                        <apex:image value="{!appInfo.logo}" styleClass="icon" width="36" height="36" rendered="{!AND(appInfo.logo!=Null, appInfo.logo!='')}"/>
+                                        <apex:image value="https://d2fs58k4ez69fv.cloudfront.net/3e30b34cf01e10bdbead07a2236325c4855ebdf893515923a494288eca4226f8" styleClass="icon" width="36" height="36" rendered="{!OR(appInfo.logo==Null, appInfo.logo=='')}"/>
+                                        <span class="name">{!appInfo.title}</span>
+                                        <span class="hsAppId hd"><apex:outputText value="{!appInfo.id}"/></span>
+                                    </a>
+                                </li>
+                                </apex:repeat>
+                            </ul>
+                        </apex:outputPanel>
+                    </div>
+                </div>
+                <div class="section-select-wrapper">
+                    <h5 class="step-title"><span class="count">2</span>Select FAQ Section</h5>
+                    
+                    <div class="content">
+                        <apex:outputPanel id="HS_SectionsPanel">
+                            <ul class="section-select" id="HSSectionList">
+                                <apex:repeat value="{!HS_Sections.sections}" var="sectionInfo" rendered="{!AND(selectedHSAppId!=Null,selectedHSAppId!='')}">
+                                    <li>
+                                        <a class="section" href="#" onclick="SelectHSSection(this);">
+                                            <apex:outputText value="{!sectionInfo.title}" />
+                                            <span class="hsSectionId hd"><apex:outputText value="{!sectionInfo.id}"/></span>
+                                        </a>
+                                    </li>
+                                </apex:repeat>
+                            </ul>
+                            <apex:outputText value="Please select an App to see Sections" rendered="{!NOT(AND(selectedHSAppId!=Null,selectedHSAppId!=''))}"/>
+                        </apex:outputPanel>
+                        
+                    </div>
+                    
+                    <small><strong>Note:</strong> You can create more sections and re-organize FAQs from the Helpshift Dashboard.</small>
+                </div>
+                
+                <div class="button-wrapper">
+                    <div class="button kaUploadButton button--save save-button active" onclick="StartUploadKAtoHS(this);">Export Articles</div>
+                </div>
+            </div>
+        </div>
+        <apex:form >
+
+            <apex:actionFunction name="FirstPage" action="{!first}" reRender="KAListPanel,PageinationBlock" />
+            <apex:actionFunction name="PrevPage" action="{!previous}" reRender="KAListPanel,PageinationBlock" />
+            <apex:actionFunction name="NextPage" action="{!next}" reRender="KAListPanel,PageinationBlock" />
+            <apex:actionFunction name="LastPage" action="{!last}" reRender="KAListPanel,PageinationBlock" />
+
+            <apex:actionFunction name="doGetHS_Apps" action="{!doGetHS_Apps}" reRender="HS_AppPanel" onComplete="defaultApp();"/>
+            <apex:actionFunction name="doRefereshSeacrchFilter" action="{!doReferesh}" reRender="KAListPanel,PageinationBlock">
+                <apex:param name="fkn" value="" assignTo="{!fkn}"/>
+            </apex:actionFunction>
+            <apex:actionFunction name="doRefereshPublishedStatus" action="{!doReferesh}" reRender="KAListPanel,PageinationBlock">
+                <apex:param name="selectedPublishStatus" value="" assignTo="{!selectedPublishStatus}"/>
+            </apex:actionFunction>
+            <apex:actionFunction name="doRefereshValidationStatus" action="{!doReferesh}" reRender="KAListPanel,PageinationBlock">
+                <apex:param name="selectedValidationStatus" value="" assignTo="{!selectedValidationStatus}"/>
+            </apex:actionFunction>
+            <apex:actionFunction name="doRefereshLanguage" action="{!doReferesh}" reRender="KAListPanel,PageinationBlock">
+                <apex:param name="selectedLanguage" value="" assignTo="{!selectedLanguage}"/>
+            </apex:actionFunction>
+            <apex:actionFunction name="doRefereshSortOrder" action="{!doReferesh}" reRender="KAListPanel,PageinationBlock">
+                <apex:param name="selectedSortOrder" value="" assignTo="{!selectedSortOrder}"/>
+            </apex:actionFunction>
+            
+            <apex:actionFunction action="{!doGetAllHSSectionForApp}" name="findAllSectionForApp" reRender="HS_SectionsPanel,KAListPanel" onComplete="defaultSelection();">
+                <apex:param name="selectedHSAppId" value="" assignTo="{!selectedHSAppId}"/>
+                <apex:param name="selectedHSSectionId" value="" assignTo="{!selectedHSSectionId}"/>
+            </apex:actionFunction>
+            <apex:actionFunction action="{!SetHSSectionId}" name="SetHSSectionId" reRender="dummyId" oncomplete="createFAQ();">
+                <apex:param name="selectedHSSectionId" value="" assignTo="{!selectedHSSectionId}"/>
+            </apex:actionFunction>
+            <apex:actionFunction name="doCreateFAQonHS" action="{!createHSFaq}" reRender="dummyId" oncomplete="StatusOfCreateFAQonHS();">
+                <apex:param name="selectedKAIds" value="" assignTo="{!selectedKAIds}"/>
+                <apex:param name="isSyncOneTransOnly" value="" assignTo="{!isSyncOneTransOnly}"/>
+            </apex:actionFunction>
+            <apex:actionFunction name="justRefreshKAListPanel" reRender="dummyId, KAListPanel" />
+        </apex:form>
+        <script>
+            function defaultApp(){
+                $($(".app")[0].parentNode).addClass("active");
+                findAllSectionForApp($($(".app")[0].parentNode).find(".hsAppId").text(), "");
+            }
+            function defaultSelection(){
+                var sectionLI = $("#HSSectionList").find(".section");
+                if(sectionLI.length > 0) {
+                    $(sectionLI[0]).addClass("active");
+                }
+                doRefreshSetCon();
+            }
+            function RefereshPublishedStatus(th) {
+                doRefereshPublishedStatus( $(th).val() );
+                ($(".selectAllArticles")[0]).checked = false;
+            }
+            function RefereshValidationStatus(th) {
+                doRefereshValidationStatus( $(th).val() );
+                ($(".selectAllArticles")[0]).checked = false;
+            }
+            function RefereshLanguage(th) {
+                doRefereshLanguage( $(th).val() );
+                ($(".selectAllArticles")[0]).checked = false;
+            }
+            function RefreshSortOrder(th) {
+                doRefereshSortOrder( $(th).val() );
+                ($(".selectAllArticles")[0]).checked = false;
+            }
+            function ToggleAllKASelection(th) {
+                var isAllSelect = th.checked;
+                $(".NotSelectedKA").find(".selectChkBx4SFKA").each(function() {
+                    if(this.checked != isAllSelect) {
+                        $(this).trigger("click");
+                    }
+                });
+            }
+            function SelectHSApp(th) {
+                $("#HSAppList").find(".active").removeClass("active");
+                $(th).addClass("active");
+                findAllSectionForApp($(th).find(".hsAppId").text(), "");
+            }
+            function SelectHSSection(th) {
+                $("#HSSectionList").find(".active").removeClass("active");
+                $(th).addClass("active");
+            }
+            function StartUploadKAtoHS(th) {
+                $(th).attr("disabled", "disabled").text("Please wait...");
+                $(".selected").find(".selectChkBx4SFKA").each(function(){
+                    if(this.checked) {
+                        selectedKAIds.push(this.id);
+                    }
+                });
+                $(".OneSelected").find(".selectChkBx4SFKA").each(function(){
+                    if(this.checked) {
+                        selectedKAIdsTransOneSelected.push(this.id);
+                    }
+                });
+                if(selectedKAIds.length < 1 && selectedKAIdsTransOneSelected.length<1) {
+                    alert("Please select atleast 1 Knowledge Article.");
+                    $(th).removeAttr("disabled").text("Export Articles");
+                }
+                else {
+                    var sectionId1 = $("#HSSectionList").find("a.active").find(".hsSectionId").text();
+                    SetHSSectionId(sectionId1);
+                }
+                console.log(selectedKAIds);
+                console.log(selectedKAIdsTransOneSelected);
+            }
+            
+            function createFAQ() {
+                var isSyncOneTransOnly = false;
+                if(totalKaIds<selectedKAIds.length) {
+                    var kaStr = "";
+                    for(var i=0; (i<50 && totalKaIds<selectedKAIds.length); i++) {
+                         kaStr = kaStr + ',"' + selectedKAIds[totalKaIds] + '"';  
+                         totalKaIds++;
+                    }
+                    if(kaStr.length > 1) {
+                        kaStr = kaStr.substring(1, kaStr.length);
+                    }
+                }
+                else if(totalKaIdsTransOneSelected < selectedKAIdsTransOneSelected.length) {
+                    isSyncOneTransOnly = true;
+                    var kaStr = "";
+                    for(var i=0; (i<50 && totalKaIdsTransOneSelected<selectedKAIdsTransOneSelected.length); i++) {
+                         kaStr = kaStr + ',"' + selectedKAIdsTransOneSelected[totalKaIdsTransOneSelected] + '"';  
+                         totalKaIdsTransOneSelected++;
+                    }
+                    if(kaStr.length > 1) {
+                        kaStr = kaStr.substring(1, kaStr.length);
+                    }
+                }
+                doCreateFAQonHS(kaStr, isSyncOneTransOnly);
+            }
+            function StatusOfCreateFAQonHS() {
+                console.log( totalKaIds );
+                console.log( selectedKAIds.length );
+                if(totalKaIds < selectedKAIds.length) {
+                    createFAQ();
+                }
+                else if(totalKaIdsTransOneSelected < selectedKAIdsTransOneSelected.length) {
+                    createFAQ();
+                }
+                else {
+                    justRefreshKAListPanel();
+                    $(".kaUploadButton").removeAttr("disabled").text("Export Articles");
+                }
+            }
+            function SearchKAByTitle(th) {
+                doRefereshSeacrchFilter($(th).val());
+            }
+            function changeNotSelectedKA2selected(th) {
+                if(th.checked) {
+                    $(th).parent(".NotSelectedKA").addClass("selected");
+                }
+                else {
+                    $(th).parent(".NotSelectedKA").removeClass("selected OneSelected");
+                }
+            }
+            function DeselectTranslationsNo(th) {
+                $(th).parent("span").parent("a").parent("div").parent("div").parent("div").removeClass("selected").addClass("OneSelected");
+            }
+            function ReselectTranslationsNo(th) {
+                $(th).parent("span").parent("a").parent("div").parent("div").parent("div").removeClass("OneSelected").addClass("selected");
+            }
+            doGetHS_Apps();
+        </script>
+    </div>
+</apex:outputPanel>    
+<div class="modal fade bs-example-modal-lg" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+        <c:HSConfigureFaqMapping rendered="{!AND(isFAQMappingCorrect, isHSAccountCreated)}"/>
+    </div>
+  </div>
+</div>  
+</apex:component>

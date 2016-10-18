@@ -1,0 +1,259 @@
+<apex:component controller="HSUser" allowDML="true">
+<script>
+    function SyncAllUser(th) {
+        $("#SFUserList").find("a.add-button").each(function(){
+            SelectedUserToSync(this);
+        });
+        if($("#SFUserList").find("li").length == 0) {
+            $(".SFUserSyncInitially").removeClass("hd");
+        }
+    }
+    function SelectedUserToSync(th) {
+        $(th).attr({"onclick":"DoNotSyncThisUser(this);", "class":"remove-button"}).parent("li").appendTo("#HSUserList");
+        $(".NoHSUserSyncInitially").addClass("hd"); 
+        if($("#SFUserList").find("li").length == 0) {
+            $(".SFUserSyncInitially").removeClass("hd");
+        }
+        $("#HSSyncUserStatus").addClass("hd");
+    }
+    function DoNotSyncThisUser(th) {
+        var isShowAlertBox = $(th).attr("iscnfrbfrdelete");
+        if(isShowAlertBox != 'undefined' && isShowAlertBox==='1') {
+            var isConfirm = window.confirm("{!JSENCODE($Label.HSAgentDeleteConfirmationMsg)}");
+            if(isConfirm) {
+                $(th).hide();
+                var sfuserid = $(th).prev("div.info").attr("id");
+                var hsuserid = $(th).parent("li").attr("hsagentid");
+                doDeleteHS_Users(sfuserid, hsuserid);
+            }
+        } 
+        else {
+            $(th).attr({"onclick":"SelectedUserToSync(this);", "class":"add-button"}).parent("li").appendTo("#SFUserList");
+            if($("#HSUserList").find("li").length == 0) {
+                $(".NoHSUserSyncInitially").removeClass("hd");
+            }
+            $(".SFUserSyncInitially").addClass("hd");
+        }
+        
+    }
+    function DoNotSyncAnyUser(th) {
+        $("#HSUserList").find("a.remove-button").each(function(){
+            DoNotSyncThisUser(this);
+        });
+    }
+    var totalUsIds=0;
+    var selectedUsIds = [];
+    function SaveChangesUserSync(th) {
+        if({!NOT(isHSAccountCreated)}) {
+            alert('Please go to Account Tab And create Account first.');
+        }
+        else {
+            totalUsIds=0;
+            selectedUsIds = [];
+            $(th).attr({"disabled":"disabled"}).addClass("disabled").text("Please wait...");
+            $("#HSUserList").find(".NotSynchedUser").each(function(){
+                var hsagentid = $(this).attr("hsagentid");
+                console.warn(hsagentid );
+                if(hsagentid == undefined || hsagentid == false) {
+                    selectedUsIds.push(($(this).attr("sfusid")));
+                }
+            });
+            $("#HSSyncUserStatus").addClass("hd");
+            if(selectedUsIds.length < 1) {
+                alert("Please select atleast 1 User.");
+                $(th).removeAttr("disabled").removeClass("disabled").text("Save Changes");
+            }
+            else {
+                createHSUser();
+            }
+        }
+    }
+    function createHSUser() {
+        var usStr = "";
+        for(var i=0; (i<100 && totalUsIds<selectedUsIds.length); i++) {
+             usStr = usStr + ',' + selectedUsIds[totalUsIds] + '';  
+             totalUsIds++;
+        }
+        if(usStr.length > 1) {
+            usStr = usStr.substring(1, usStr.length);
+        }
+        doCreateUseronHS(usStr);
+    }
+    function StatusOfCreateUseronHS(isSuccess, UsIds) {
+        if(isSuccess && UsIds.length >1) {
+            var usIdsArr = UsIds.split(',');
+            for(var i=0; (i<usIdsArr.length); i++) {
+                $(("#"+usIdsArr[i])).parent("li").removeClass("NotSynchedUser").addClass("SynchedUser").find(".remove-button").hide().attr("iscnfrbfrdelete", "1");
+            }
+        }
+        else {
+            alert("Error in User Sync.");
+        }
+        if(totalUsIds< selectedUsIds.length) {
+            createHSUser();
+        }
+        else {
+            $("#HSUserSaveBtn").removeAttr("disabled").removeClass("disabled").text("Save Changes");
+            $("#HSSyncUserStatus").removeClass("hd");
+        }                                
+    }
+    function SearchinSFUserList(th) {
+        var sfUsName = $(th).val();
+        console.log('To seacrh--->'+sfUsName);
+        $("#SFUserList").find("li").each(function(){
+            if(sfUsName=='') {
+                $(this).removeClass("hd");
+            }
+            else {
+                sfUsName = sfUsName.toLowerCase()
+                var sfUsNameVal = $($(this).find(".name")[0]).text().toLowerCase();
+                if(sfUsNameVal.indexOf(sfUsName)>-1) {
+                    $(this).removeClass("hd");    
+                }
+                else {
+                    $(this).addClass("hd");
+                }
+            }
+        });
+    }
+    function SearchinHSUserList(th) {
+        var sfUsName = $(th).val();
+        console.log('To seacrh--->'+sfUsName);
+        $("#HSUserList").find("li").each(function(){
+            if(sfUsName=='') {
+                $(this).removeClass("hd");
+            }
+            else {
+                sfUsName = sfUsName.toLowerCase()
+                var sfUsNameVal = $($(this).find(".name")[0]).text().toLowerCase();
+                if(sfUsNameVal.indexOf(sfUsName)>-1) {
+                    $(this).removeClass("hd");    
+                }
+                else {
+                    $(this).addClass("hd");
+                }
+            }
+        });
+    }
+</script>
+<div class="section--supportteam">
+    <div class="section__content">
+        <apex:outputPanel id="UserListPanel">
+        <div id="HSSyncUserStatus" class="alert alert-info hd" role="alert">User have been added.</div>
+        <div class="salesforce-users">
+            <h4 class="title">Salesforce Users <!--<span class="sync-icon"></span>--></h4>
+            <div class="users-list">
+                <div class="header">
+                    <div class="search">
+                        <input type="search" placeholder="Type a name" onkeyup="SearchinSFUserList(this);" />
+                    </div>
+                    <div class="button-wrapper">
+                        <a class="button button--add" onclick="SyncAllUser(this);">Add All</a>
+                    </div>
+                </div>
+                
+                <div class="list-wrapper">
+                    <apex:outputPanel layout="block" rendered="{!userList.size<1}" styleClass="SFUserSyncInitially" style="padding:25px;">
+                        No salesforce user available for sync
+                    </apex:outputPanel>
+                    <ul class="list" id="SFUserList">
+                        <apex:repeat value="{!userList}" var="us">
+                            <li id="{!us.Email}" sfusid="{!us.Id}" isSync="{!us.isHSUser__c}" class="NotSynchedUser">
+                                <div class="info" id="{!us.Id}">
+                                    <div class="avatar"><apex:image value="{!us.SmallPhotoUrl}" width="40" height="40" /></div>
+                                    <div class="name-role">
+                                        <div class="name">
+                                            <apex:outputText value="{!us.Name}" /> &nbsp;
+                                            <apex:outputText value=" (Helpshift Admin)" rendered="false"/>
+                                        </div>
+                                        <span class="role"><apex:outputText value="{!us.UserRole.Name}" /></span>
+                                    </div>
+                                </div>
+                                <a class="add-button" href="#" onclick="SelectedUserToSync(this);"></a>
+                            </li>
+                        </apex:repeat>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <div class="helpshift-agents">
+            <h4 class="title">Helpshift Agents</h4>
+            
+            <div class="users-list">
+                <div class="header">
+                    <div class="search">
+                        <input type="search" placeholder="Search Agents" onKeyup="SearchinHSUserList(this);" />
+                    </div>
+                    <div class="button-wrapper">
+                        <a class="button button--remove hd" onclick="DoNotSyncAnyUser(this);">Remove All</a>
+                    </div>
+                </div>
+                
+                <div class="list-wrapper list-wrapper--agents">
+                    <apex:outputPanel layout="block" rendered="false" styleClass="NoHSUserSyncInitially hd" style="padding:25px;">
+                        Select Salesforce users that you want provision as Helpshift Agents 
+                    </apex:outputPanel>
+                    <ul class="list list--agents" id="HSUserList">
+                        <apex:repeat value="{!syncUserList}" var="syncUS" rendered="false">
+                            <li id="{!syncUS.Id}" isSync="{!syncUS.isHSUser__c}" class="SynchedUser">
+                                <div class="info" id="{!syncUS.Id}">
+                                    <div class="avatar"><apex:image value="{!syncUS.SmallPhotoUrl}" width="40" height="40" /></div>
+                                    <div class="name-role">
+                                        <div class="name">
+                                            <apex:outputText value="{!syncUS.Name}" /> &nbsp;
+                                            <apex:outputText value=" (Helpshift Admin)" rendered="{!syncUS.isHSAdmin__c}"/>
+                                        </div>
+                                        <span class="role"><apex:outputText value="{!syncUS.UserRole.Name}" /></span>
+                                    </div>
+                                </div>
+                                <a class="remove-button" style="display:none" href="#"></a>
+                            </li>
+                        </apex:repeat>
+                    </ul>
+                </div>
+                <button class="button button--save save-button active" href="#" onclick="SaveChangesUserSync(this);" id="HSUserSaveBtn">Save Changes</button>
+            </div>
+        </div>
+        </apex:outputPanel>
+    </div>
+</div>
+<apex:actionRegion renderRegionOnly="true" rendered="{!isHSAccountCreated}">
+<apex:form >
+    <apex:actionFunction name="doCreateUseronHS" action="{!createHSUser}" reRender="dummyId" oncomplete="StatusOfCreateUseronHS({!isUserSynced}, '{!JSENCODE(selectedUsIds)}');">
+        <apex:param name="selectedUsIds" value="" assignTo="{!selectedUsIds}"/>
+    </apex:actionFunction>
+    <apex:actionFunction name="doGetHS_Users" action="{!doGetHS_Users}" reRender="dummyId" oncomplete="doGetHS_UsersResult('{!JSENCODE(HS_Users)}');">
+        <apex:param name="pageNo" value="" assignTo="{!pageNo}"/>
+    </apex:actionFunction>
+    <apex:actionFunction name="doDeleteHS_Users" action="{!doDeleteHS_Users}" reRender="dummyId" oncomplete="doDeleteHS_UsersResult('{!JSENCODE(sfUserId)}', {!isAgentDeleted});">
+        <apex:param name="sfUserId" value="" assignTo="{!sfUserId}"/>
+        <apex:param name="hsAgentId" value="" assignTo="{!hsAgentId}"/>
+    </apex:actionFunction>
+    <script>
+        doGetHS_Users(1);
+        function doGetHS_UsersResult(hsUserJsonString) {
+            var hsUserJson = JSON.parse(hsUserJsonString);
+            console.warn(hsUserJson);
+            for(var profile in hsUserJson.profiles) {
+                var hsUser = $("#SFUserList").find(document.getElementById(hsUserJson.profiles[profile].email));
+                if(hsUser.length > 0)
+                    $(hsUser[0]).attr("hsagentid",hsUserJson.profiles[profile].id).find(".add-button").attr("isCnfrBfrDelete","1").trigger("click");
+            }
+            if(hsUserJson.page < hsUserJson["total-pages"]) {
+                doGetHS_Users( (parseInt(hsUserJson.page)+1) );
+            }
+        }
+        function doDeleteHS_UsersResult(DeletedSFUserId, isSuccess) {
+            if(isSuccess) {
+                $(("#"+DeletedSFUserId)).parent("li").removeAttr("hsagentid").find(".remove-button").removeAttr("isCnfrBfrDelete").trigger("click").show();
+            }
+            else {
+                alert("Error in removing Agent from Helpshift");
+            }
+        }
+    </script>
+    <apex:outputPanel id="dummyId"/>
+</apex:form>
+</apex:actionRegion>
+</apex:component>

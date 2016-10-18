@@ -1,0 +1,3 @@
+<apex:page sidebar="false" showHeader="true" standardStylesheets="false" applyBodyTag="false" readOnly="true">
+    <c:HelpshiftAccountCanvasApp loadDashboard="true" />
+</apex:page>

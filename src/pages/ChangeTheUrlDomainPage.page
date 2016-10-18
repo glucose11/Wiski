@@ -1,0 +1,32 @@
+<apex:page controller="ChangeTheUrlDomain">
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
+<script>
+			
+	$( document ).ready(function() {
+    		console.log( "ready!" );
+    		var l = $('#linkIds').links;
+    		
+    		
+    		
+    		var links = $('#linkIds a');
+
+			for(var i = 0; i< links.length; i++){
+			  //console.log(links[i].href);
+			  updatedlinks = links[i].href.replace('nest.com/' , 'salesforce.com');
+			  //updateLinks.push(links[i].href.replace('nest.com/' , 'salesforce.com/'));
+			  console.log(links[i].href);
+			  console.log(updatedlinks);
+}
+
+</script>
+<div id ="linkIds">
+
+
+
+<apex:outputText value="{!faqArticle.Answer__c}" escape="false" />
+</div>
+
+
+
+
+</apex:page>
